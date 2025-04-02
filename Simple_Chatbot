@@ -27,6 +27,7 @@
             display: flex;
             flex-direction: column;
             position: relative;
+            color: white;
         }
         .chat-box {
             flex-grow: 1;
@@ -58,9 +59,6 @@
             cursor: pointer;
             margin-left: 8px;
         }
-        .user-input button:hover {
-            background-color: #0056b3;
-        }
         .message {
             margin: 5px;
             padding: 10px;
@@ -69,7 +67,7 @@
         }
         .user-message {
             background-color: greenyellow;
-            color: #fff;
+            color: black;
             align-self: flex-end;
         }
         .bot-message {
@@ -77,32 +75,34 @@
             color: purple;
             align-self: flex-start;
         }
+        .timestamp {
+            font-size: 10px;
+            color: gray;
+        }
         #typing-indicator {
             display: none;
             font-style: italic;
             color: grey;
             padding: 5px;
         }
-        .toggle-theme {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            padding: 5px 10px;
-            background-color: gray;
-            color: white;
-            border: none;
-            cursor: pointer;
-            border-radius: 4px;
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px;
         }
     </style>
 </head>
 <body>
     <div class="chat-container">
-        <button class="toggle-theme" onclick="toggleTheme()">Dark Mode</button>
+        <div class="controls">
+            <button onclick="toggleTheme()">Dark Mode</button>
+            <button onclick="clearChat()">Clear Chat</button>
+        </div>
         <div class="chat-box" id="chat-box">
             <div id="typing-indicator">Bot is typing...</div>
         </div>
         <div class="user-input">
+            <button onclick="startListening()">🎤</button>
             <input type="text" id="user-message" placeholder="Type a message..." onkeypress="handleKeyPress(event)" />
             <button onclick="sendMessage()">Send</button>
         </div>
@@ -110,11 +110,13 @@
     <script>
         const botResponses = {
             "hello": "Hi! How can I help you today?",
-            "how are you": "I'm good, thanks for asking! How can I assist you?",
+            "how are you": "I'm good, thanks for asking!",
             "bye": "Goodbye! Have a great day!",
             "what is my name": "Your name is Mohsin.",
             "what is my friend name": "Your friend's name is Anas.",
+            "tell me a joke": "Why don't skeletons fight each other? Because they don't have the guts!"
         };
+
         function sendMessage() {
             const userMessage = document.getElementById("user-message").value.trim();
             if (!userMessage) return;
@@ -125,32 +127,56 @@
                 const botResponse = getBotResponse(userMessage.toLowerCase());
                 document.getElementById("typing-indicator").style.display = "none";
                 displayMessage(botResponse, 'bot');
+                speak(botResponse);
             }, 1000);
         }
+
         function displayMessage(message, sender) {
             const chatBox = document.getElementById("chat-box");
             const messageDiv = document.createElement("div");
             messageDiv.classList.add("message", sender === 'user' ? "user-message" : "bot-message");
-            messageDiv.innerText = message;
+            messageDiv.innerHTML = `<span>${message}</span><div class='timestamp'>${new Date().toLocaleTimeString()}</div>`;
             chatBox.appendChild(messageDiv);
             chatBox.scrollTop = chatBox.scrollHeight;
         }
+
         function getBotResponse(userMessage) {
             for (let key in botResponses) {
                 if (userMessage.includes(key)) {
                     return botResponses[key];
                 }
             }
-            return "Hello, I'm a chatbot. How can I assist you?";
+            return "I'm not sure about that. Can you ask something else?";
         }
+
         function handleKeyPress(event) {
             if (event.key === "Enter") {
                 sendMessage();
             }
         }
+
         function toggleTheme() {
             document.body.classList.toggle("dark-mode");
-            document.querySelector(".chat-container").classList.toggle("dark-mode");
+        }
+
+        function clearChat() {
+            document.getElementById("chat-box").innerHTML = "<div id='typing-indicator'>Bot is typing...</div>";
+        }
+
+        function speak(text) {
+            const speech = new SpeechSynthesisUtterance(text);
+            speech.lang = "en-US";
+            window.speechSynthesis.speak(speech);
+        }
+
+        function startListening() {
+            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = "en-US";
+            recognition.start();
+            recognition.onresult = function(event) {
+                document.getElementById("user-message").value = event.results[0][0].transcript;
+                sendMessage();
+            };
         }
     </script>
 </body>
